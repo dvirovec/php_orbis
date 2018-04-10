@@ -61,6 +61,25 @@
 
     }
     #------------------------------------------------
+    private function generatDetailRowsSelectStatement(){
+
+        $columns = "";
+
+        foreach($this as $key => $value) {
+            if(strpos($key,"_")===false) {             
+                  $columns .= $key . ",";  
+            }
+        }
+
+        $columns = substr_replace($columns,'',strlen($columns)-1);
+
+        $this->_CMD_SELECT_SINGLE_ROW = str_replace('<columns>',$columns,$this->_CMD_SELECT_SINGLE_ROW);
+        $this->_CMD_SELECT_SINGLE_ROW = str_replace('<table_name>',strtolower(get_class($this)),$this->_CMD_SELECT_SINGLE_ROW); 
+
+        $this->_CMD_SELECT_SINGLE_ROW .= " id = ?;"; 
+
+    }
+    #------------------------------------------------
      private function generateUpdateStatement() {
 
         $columns = "";    
