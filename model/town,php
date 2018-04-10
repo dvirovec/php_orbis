@@ -1,0 +1,11 @@
+<?php 
+
+
+class Town {
+
+    public $id;
+    public $name;
+    public $countryid;
+}
+
+?>
