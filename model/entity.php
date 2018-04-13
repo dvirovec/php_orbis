@@ -6,6 +6,8 @@
     private $_CMD_UPDATE = 'UPDATE <table_name> SET <columns> WHERE id = ?;';
     private $_CMD_DELETE = 'DELETE FROM <table_name> WHERE id = ?;';
     private $_CMD_SELECT_SINGLE_ROW = 'SELECT <columns> FROM <table_name> WHERE';
+    private $_CMD_SELECT_ALL = 'SELECT <columns> FROM <table_name>;';
+    
     public $_TYPE_LIST;
 
     public $id = -1;
@@ -77,6 +79,22 @@
         $this->_CMD_SELECT_SINGLE_ROW = str_replace('<table_name>',strtolower(get_class($this)),$this->_CMD_SELECT_SINGLE_ROW); 
 
         $this->_CMD_SELECT_SINGLE_ROW .= " id = ?;"; 
+
+    }
+    #------------------------------------------------
+    private function generatAllRowsSelectStatement(){
+
+        $columns = "";
+
+        foreach($this as $key => $value) {
+            if(strpos($key,"_")===false) {             
+                  $columns .= $key . ",";  
+            }
+        }
+
+        $this->_CMD_SELECT_ALL = str_replace('<columns>',$columns,$this->_CMD_SELECT_ALL);
+        $this->_CMD_SELECT_ALL = 
+        str_replace('<table_name>',strtolower(get_class($this)),$this->_CMD_SELECT_ALL); 
 
     }
     #------------------------------------------------
