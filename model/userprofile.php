@@ -10,8 +10,5 @@ class UserProfile extends Entity {
     public $lastname;
     public $passwd;
 
-    function __construct() {
-        parent::__construct("sssss");     
-    }
 }
 ?>

@@ -2,221 +2,220 @@
 
   class Entity {
 
-    private $_CMD_INSERT = 'INSERT INTO <table_name> (<columns>) VALUES (<attributes>);';
-    private $_CMD_UPDATE = 'UPDATE <table_name> SET <columns> WHERE id = ?;';
-    private $_CMD_DELETE = 'DELETE FROM <table_name> WHERE id = ?;';
-    private $_CMD_SELECT_SINGLE_ROW = 'SELECT <columns> FROM <table_name> WHERE';
-    private $_CMD_SELECT_ALL = 'SELECT <columns> FROM <table_name>;';
+    private $_CMD_INSERT;
+    private $_CMD_UPDATE;
+    private $_CMD_DELETE;
+    private $_CMD_SELECT_SINGLE_ROW; 
+    private $_CMD_SELECT_ALL;
     
-    public $_TYPE_LIST;
+    private $_db;
+    
+    private $_columns;
+    private $_attributes;
 
-    public $id = -1;
+    public  $id = -1;
+    private $cid = -1;
 
-    function __construct($type_list) {
+    function __construct() {
         
-        $this->_TYPE_LIST = $type_list;
-        
-        $this->generateInsertStatement();
-        $this->generateUpdateStatement();     
-        $this->generateDeleteStatement();     
-        $this->generateSingleRowSelectStatement();
+        $this->_CMD_INSERT = CMD_INSERT;
+        $this->_CMD_UPDATE = CMD_UPDATE;
+        $this->_CMD_DELETE = CMD_DELETE;
+        $this->_CMD_SELECT_SINGLE_ROW = CMD_SELECT_SINGLE_ROW; 
+        $this->_CMD_SELECT_ALL = CMD_SELECT_ALL;
+
+        $this->_db = $_SESSION["db_conn"];
+
+        $this->generateStatement($this->_CMD_INSERT);
+        $this->generateStatement($this->_CMD_UPDATE);
+        $this->generateStatement($this->_CMD_DELETE);
+        $this->generateStatement($this->_CMD_SELECT_SINGLE_ROW);
+        $this->generateStatement($this->_CMD_SELECT_ALL);
 
     }    
-    #------------------------------------------------
-     private function generateInsertStatement() {
+    #-----------------------------------------------
+    private function checkDb(){
+        if($this->_db!==null) {
+            error_log("Database ok ....!");
+        } else {
+            $this->_db = $_SESSION["db_conn"];
+        }
+    }
+    #-----------------------------------------------
+    private function processAttributes(){
 
-        $columns = "";    
-        $attributes = "";
-        
+        $this->_columns = "";    
+        $this->_attributes = "";
+
         foreach($this as $key => $value ) {
             if(strpos($key,"_")===False and ($key=="id")===false) {
-              $columns .=  $key . ','; 
-              $attributes .=  "?,";
+              $this->_columns .=  $key . ','; 
+              $this->_attributes .=  ":" . $key .",";
             }
         }
 
-        $columns = substr_replace($columns,'',strlen($columns)-1);
-        $attributes = substr_replace($attributes,'',strlen($attributes)-1);        
-
-        $this->_CMD_INSERT = str_replace('<columns>',$columns,$this->_CMD_INSERT);
-        $this->_CMD_INSERT = str_replace('<table_name>',strtolower(get_class($this)),$this->_CMD_INSERT); 
-        $this->_CMD_INSERT = str_replace('<attributes>',$attributes,$this->_CMD_INSERT); 
-
+        $this->_columns = substr_replace($this->_columns,'',strlen($this->_columns)-1);
+        $this->_attributes = substr_replace($this->_attributes,'',strlen($this->_attributes)-1);        
     }
-    #------------------------------------------------
-    private function generateSingleRowSelectStatement(){
+    #-----------------------------------------------
+    private function processUpdateAttributes(){
 
-        $columns = "";
+        $this->_columns = "";    
+        $this->_attributes = "";
 
-        foreach($this as $key => $value) {
-            if(strpos($key,"_")===false) {             
-                  $columns .= $key . ",";  
-            }
-        }
-
-        $columns = substr_replace($columns,'',strlen($columns)-1);
-
-        $this->_CMD_SELECT_SINGLE_ROW = str_replace('<columns>',$columns,$this->_CMD_SELECT_SINGLE_ROW);
-        $this->_CMD_SELECT_SINGLE_ROW = str_replace('<table_name>',strtolower(get_class($this)),$this->_CMD_SELECT_SINGLE_ROW); 
-
-        $this->_CMD_SELECT_SINGLE_ROW .= " id = ?;"; 
-
-    }
-    #------------------------------------------------
-    private function generatDetailRowsSelectStatement(){
-
-        $columns = "";
-
-        foreach($this as $key => $value) {
-            if(strpos($key,"_")===false) {             
-                  $columns .= $key . ",";  
-            }
-        }
-
-        $columns = substr_replace($columns,'',strlen($columns)-1);
-
-        $this->_CMD_SELECT_SINGLE_ROW = str_replace('<columns>',$columns,$this->_CMD_SELECT_SINGLE_ROW);
-        $this->_CMD_SELECT_SINGLE_ROW = str_replace('<table_name>',strtolower(get_class($this)),$this->_CMD_SELECT_SINGLE_ROW); 
-
-        $this->_CMD_SELECT_SINGLE_ROW .= " id = ?;"; 
-
-    }
-    #------------------------------------------------
-    private function generatAllRowsSelectStatement(){
-
-        $columns = "";
-
-        foreach($this as $key => $value) {
-            if(strpos($key,"_")===false) {             
-                  $columns .= $key . ",";  
-            }
-        }
-
-        $this->_CMD_SELECT_ALL = str_replace('<columns>',$columns,$this->_CMD_SELECT_ALL);
-        $this->_CMD_SELECT_ALL = 
-        str_replace('<table_name>',strtolower(get_class($this)),$this->_CMD_SELECT_ALL); 
-
-    }
-    #------------------------------------------------
-     private function generateUpdateStatement() {
-
-        $columns = "";    
-        
         foreach($this as $key => $value ) {
             if(strpos($key,"_")===False and ($key=="id")===false) {
-              $columns .=  $key . " = ?,";               
+              $this->_columns .=  $key . ' = :' . $key . ',';               
             }
         }
 
-        $columns = substr_replace($columns,'',strlen($columns)-1);
-       
-        $this->_CMD_UPDATE = str_replace('<columns>',$columns,$this->_CMD_UPDATE);
-        $this->_CMD_UPDATE = str_replace('<table_name>',strtolower(get_class($this)),$this->_CMD_UPDATE); 
-
-     }
+        $this->_columns = substr_replace($this->_columns,'',strlen($this->_columns)-1);
+          
+    }
     #------------------------------------------------
-     private function generateDeleteStatement() {
+     private function generateStatement(&$cmd) {
 
-        $this->_CMD_DELETE = str_replace('<table_name>',strtolower(get_class($this)),$this->_CMD_DELETE); 
+         if(strpos($cmd,"UPDATE")!==false) {
+            $this->processUpdateAttributes();
+         }
+         else {
+            $this->processAttributes();
+        }
 
+        $cmd = str_replace('<columns>',$this->_columns,$cmd);
+        $cmd = str_replace('<table_name>',strtolower(get_class($this)),$cmd); 
+        $cmd = str_replace('<attributes>',$this->_attributes,$cmd); 
+    }
+    #------------------------------------------------
+    public function setSelectSQL($sql) {
+        $this->_CMD_SELECT_SINGLE_ROW = $sql;
+    }
+    #------------------------------------------------
+    public function setSelectAllSQL($sql) {
+        $this->_CMD_SELECT_ALL = $sql;
+    }
+    #------------------------------------------------
+    public function dbSave() {
+        $this->checkDb();
+
+        if(isset($_POST["id"])) $this->id = $_POST["id"];
+
+        if($this->id == -1) { 
+            $this->dbInsert(); }
+         else { 
+             $this->dbUpdate(); }
      }
     #------------------------------------------------
      public function dbInsert() {
-
-        $mysqli = $_SESSION["db_conn"]; 
-
-        $a_params[] = & $this->_TYPE_LIST;
-
-        #error_log($this->_TYPE_LIST);
-
-        $value_list = array();
-
-        #error_log($this->_CMD_INSERT);
-
-        if($stmt = $mysqli->prepare($this->_CMD_INSERT)){        
+    
+        if($stmt = $this->_db->prepare($this->_CMD_INSERT)){        
             foreach($this as $key => $value ) {   
-                if(strpos($key,"_")===false and ($key=="id")===false) {             
-                    error_log($key . "->" . $value);
-                    $value_list[$key] = $value;    
-                    $a_params[] = & $value_list[$key];             
+                if(strpos($key,"_")===false and ($key=="id")===false) {                    
+                    if(isset($_POST[$key])) $value = $_POST[$key];
+                    $stmt->bindValue(":". $key, $value );       
                 }
-            }        
-                        
-            call_user_func_array(array($stmt, 'bind_param'), $a_params);
+            }
 
-            if($stmt->execute()){
-                error_log("OK Saved " . $this->_CMD_INSERT);
-                $this->id = $_SESSION["db_conn"]->insert_id;
-            }
-            else  {
-                error_log("NOT Saved " . $this->_CMD_INSERT);
-            }
+            $stmt->bindValue(":cid", $_SESSION["cid"] );
         }
-     }
-     #------------------------------------------------
-     public function dbUpdate() {
-
-        $mysqli = $_SESSION["db_conn"]; 
-
-        $type_list = $this->_TYPE_LIST . "i";
-
-        $a_params[] = & $type_list;
-
-        $value_list = array();
-
-        if($stmt = $mysqli->prepare($this->_CMD_UPDATE)){        
-            foreach($this as $key => $value ) {   
-                if(strpos($key,"_")===false and ($key=="id")===false) {             
-                    $value_list[$key] = $value;    
-                    $a_params[] = & $value_list[$key];             
-                }              
-            }    
-            
-            $value_list["id"] = $this->id;
-            $a_params[] = & $value_list["id"];
+        else {
+            error_log("Problem preparing statement " . $this->_CMD_INSERT);    
+            return;
+        }        
                         
-            call_user_func_array(array($stmt, 'bind_param'), $a_params);
-
-            if($stmt->execute()){
-                error_log("OK Updated " . $this->_CMD_UPDATE);
+        try {
+            $this->_db->beginTransaction();
+            $stmt->execute();
+            $this->id = $this->_db->lastInsertId();    
+            $this->_db->commit();
+        }
+        catch(PDOException $e) {
+                $this->_db->rollback();
+                error_log($e->getMessage());                
             }
-            else  {
-                error_log("NOT Updated " . $this->_CMD_UPDATE);
-            }
-        }    
      }
-    #------------------------------------------------
+#------------------------------------------------
+       public function dbUpdate() {
+
+        if($stmt = $this->_db->prepare($this->_CMD_UPDATE)){        
+            foreach($this as $key => $value ) {   
+                if(strpos($key,"_")===false) {
+                    if(isset($_POST[$key])) $value = $_POST[$key];
+                    $stmt->bindValue(":". $key, $value );       
+                }
+            }
+
+            $stmt->bindValue(':id', intval($_POST['id']) );  
+            $stmt->bindValue(':cid', intval($_SESSION['cid']) );       
+        }
+        else {
+            error_log("Problem preparing statement " . $this->_CMD_UPDATE);    
+            return;
+        }         
+            
+        try {
+            $this->_db->beginTransaction();
+            $stmt->execute();
+            $this->_db->commit();    
+        }
+        catch(PDOException $e) {
+                $this->_db->rollback();
+                error_log($e->getMessage());                
+            }  
+     }
+  #------------------------------------------------
+  public function dbDelete($id) {
+
+    $this->checkDb();
+
+    if($stmt = $this->_db->prepare($this->_CMD_DELETE)){        
+        $stmt->bindValue(":id", $id);
+    }
+    
+    try {
+        $this->_db->beginTransaction();
+        $stmt->execute();
+        $this->_db->commit();    
+    }
+    catch(PDOException $e) {
+            $this->_db->rollback();
+            error_log($e->getMessage());                
+        }  
+
+}     
+#------------------------------------------------
     public function setValues() {
        
+        error_log("Updating values ...");
         foreach($this as $key => $value) {           
             if(strpos($key,"_")===False) {
                 if(isset($_POST[$key]))  {
-                    #error_log($key . "->" . $_POST[$key]);
+                    error_log($key . "->" . $_POST[$key]);
                     $this->$key = $_POST[$key];
                     unset($_POST[$key]);
                 }
                 }
         }
+        $this->cid = $_SESSION["cid"];
      }
      #------------------------------------------------
      public function dbSelect($id) {
 
-        $mysqli = $_SESSION["db_conn"]; 
-        
-        if($stmt = $mysqli->prepare($this->_CMD_SELECT_SINGLE_ROW)){        
-            
-            mysqli_stmt_bind_param($stmt, "i", $id);
-            
+        $this->checkDb();
+
+        error_log($this->_CMD_SELECT_SINGLE_ROW);
+
+        if($stmt = $this->_db->prepare($this->_CMD_SELECT_SINGLE_ROW)){                    
+            $stmt->bindValue(":id", $id);            
             $stmt->execute();
-            
-            $result = $stmt->get_result();
-                
-            if($result->num_rows > 0) {
-                
-                $row = $result->fetch_array(1);
-                 
+               
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if(count($result) > 0) {               
+               
+                $row = $result[0];
+
                 foreach($this as $key => $value) {
-                    
                     if(strpos($key,"_")===false){
                         $this->$key = $row[$key];                     
                     }
@@ -229,36 +228,23 @@
             }   
     }
     #------------------------------------------------
-     public function dbSave() {
-        if($this->id == -1) { 
-            #error_log($this->id);
-            $this->dbInsert(); }
-         else { 
-             $this->dbUpdate(); }
-     }
-     #------------------------------------------------
-    public function dbDelete($id) {
+    public function dbSelectAll($cid) {
 
-        $mysqli = $_SESSION["db_conn"]; 
+        $this->checkDb();
 
-        $type_list = "i";
+        error_log($this->_CMD_SELECT_ALL);
 
-        $a_params[] = & $type_list;
-    
-        if($stmt = $mysqli->prepare($this->_CMD_DELETE)){        
-            $a_params[] = & $id;
-        }
+        if($stmt = $this->_db->prepare($this->_CMD_SELECT_ALL)){                    
+            $stmt->bindValue(":cid", $cid);            
+            $stmt->execute();
 
-        call_user_func_array(array($stmt, 'bind_param'), $a_params);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);   
 
-        if($stmt->execute()){
-            error_log("OK Deleted " . $this->_CMD_DELETE);
-            }
-            else  {
-                error_log("NOT Deleted " . $this->_CMD_DELETE);
-            }
-        }
-
-  }
-
+            return $result;             
+            }   
+    }
+  
+ 
+}
+     
 ?>

@@ -9,17 +9,19 @@ $profile = new UserProfile();
 $company = new Company();
 
 if($_SERVER["REQUEST_METHOD"] == "POST") {    
-   # error_log("Savig data ...");
+  
+    error_log("Savig data ...");
 
-   # $profile->setValues();
-    
-    #if($profile->id==-1) {
-      #  $company->setValues();
-       # $company->dbSave();
-   #}            
-   # $profile->dbSave();
+    if($profile->id==-1) {
+        $company->setValues();
+        $company->dbSave();
+        $_SESSION["cid"] = $company->id;
 
-    $company->dbSelect(5);
+        error_log("CID = " . $_SESSION["cid"]);
+    }            
+   
+   $profile->setValues();
+   $profile->dbSave();
 
 }
 else {
