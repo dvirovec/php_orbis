@@ -24,7 +24,9 @@
         $this->_CMD_SELECT_SINGLE_ROW = CMD_SELECT_SINGLE_ROW; 
         $this->_CMD_SELECT_ALL = CMD_SELECT_ALL;
 
-        $this->_db = $_SESSION["db_conn"];
+        $this->_db = new PDO($_SESSION["conn_str"], DB_USERNAME, DB_PASSWORD); 
+        $this->_db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->_db->exec('SET NAMES "utf8"');
 
         $this->generateStatement($this->_CMD_INSERT);
         $this->generateStatement($this->_CMD_UPDATE);
@@ -36,9 +38,11 @@
     #-----------------------------------------------
     private function checkDb(){
         if($this->_db!==null) {
-            error_log("Database ok ....!");
+            
         } else {
-            $this->_db = $_SESSION["db_conn"];
+            $this->_db = new PDO($conn_str, DB_USERNAME, DB_PASSWORD); 
+            $this->_db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->_db->exec('SET NAMES "utf8"');
         }
     }
     #-----------------------------------------------
@@ -96,23 +100,29 @@
     }
     #------------------------------------------------
     public function dbSave() {
+
         $this->checkDb();
 
-        if(isset($_POST["id"])) $this->id = $_POST["id"];
+        $this->setValues();
+
+       if (!$this->validate()) { 
+          return false;   
+       }
 
         if($this->id == -1) { 
             $this->dbInsert(); }
          else { 
              $this->dbUpdate(); }
+
+        return true;     
      }
     #------------------------------------------------
      public function dbInsert() {
     
         if($stmt = $this->_db->prepare($this->_CMD_INSERT)){        
             foreach($this as $key => $value ) {   
-                if(strpos($key,"_")===false and ($key=="id")===false) {                    
-                    if(isset($_POST[$key])) $value = $_POST[$key];
-                    $stmt->bindValue(":". $key, $value );       
+                if(strpos($key,"_")===false and ($key=="id")===false) {
+                    $stmt->bindValue(":". $key, $this->$key );       
                 }
             }
 
@@ -140,16 +150,14 @@
         if($stmt = $this->_db->prepare($this->_CMD_UPDATE)){        
             foreach($this as $key => $value ) {   
                 if(strpos($key,"_")===false) {
-                    if(isset($_POST[$key])) $value = $_POST[$key];
-                    $stmt->bindValue(":". $key, $value );       
+                    $stmt->bindValue(":". $key, $this->$key );       
                 }
             }
 
             $stmt->bindValue(':id', intval($_POST['id']) );  
             $stmt->bindValue(':cid', intval($_SESSION['cid']) );       
         }
-        else {
-            error_log("Problem preparing statement " . $this->_CMD_UPDATE);    
+        else {  
             return;
         }         
             
@@ -185,25 +193,22 @@
 }     
 #------------------------------------------------
     public function setValues() {
-       
-        error_log("Updating values ...");
+
         foreach($this as $key => $value) {           
             if(strpos($key,"_")===False) {
                 if(isset($_POST[$key]))  {
                     error_log($key . "->" . $_POST[$key]);
                     $this->$key = $_POST[$key];
-                    unset($_POST[$key]);
                 }
                 }
         }
+        if(isset($_POST["id"])) $this->id = $_POST["id"];
         $this->cid = $_SESSION["cid"];
      }
      #------------------------------------------------
      public function dbSelect($id) {
 
         $this->checkDb();
-
-        error_log($this->_CMD_SELECT_SINGLE_ROW);
 
         if($stmt = $this->_db->prepare($this->_CMD_SELECT_SINGLE_ROW)){                    
             $stmt->bindValue(":id", $id);            
@@ -221,18 +226,16 @@
                     }
                 }
             }            
-            error_log("OK Selected " . $this->_CMD_SELECT_SINGLE_ROW);
+        
             }
             else  {
-                error_log("NOT Selected " . $this->_CMD_SELECT_SINGLE_ROW);
+                error_log("ERROR - NOT Selected " . $this->_CMD_SELECT_SINGLE_ROW);
             }   
     }
     #------------------------------------------------
     public function dbSelectAll($cid) {
 
         $this->checkDb();
-
-        error_log($this->_CMD_SELECT_ALL);
 
         if($stmt = $this->_db->prepare($this->_CMD_SELECT_ALL)){                    
             $stmt->bindValue(":cid", $cid);            
@@ -243,6 +246,11 @@
             return $result;             
             }   
     }
+    #------------------------------------------------
+    public function validate() {
+        return true;
+    }
+
   
  
 }

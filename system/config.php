@@ -16,15 +16,7 @@ try {
 
 $conn_str = "mysql:host=" . DB_SERVER . ";dbname=" .DB_NAME .";port=" . DB_PORT;    
 
-error_log($conn_str);
-
-$_SESSION["db_conn"] = new PDO($conn_str, DB_USERNAME, DB_PASSWORD); 
-$_SESSION["db_conn"]->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$_SESSION["db_conn"]->exec('SET NAMES "utf8"');
-
-$output = "Succesfully connected to databsae server !";
-error_log($output);
-
+$_SESSION["conn_str"] = $conn_str;
 }
 catch(PDOException $e) {
     $output = "Unable to connect to database server !";
@@ -32,10 +24,7 @@ catch(PDOException $e) {
     exit();
 }
 
+#$_SESSION["page"] = "home";
 $_SESSION["cid"] = 1;
-
-if($_SESSION["db_conn"] === false) {
-    die("ERROR: Could not connect. " . $mysqli->connect_error);
-}
 
 ?>

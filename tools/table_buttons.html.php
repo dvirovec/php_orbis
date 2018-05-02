@@ -1,0 +1,2 @@
+<td><a href="?edit=<?php echo $row["id"]?>" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-edit"></span></a></td>
+<td><a href="?del=<?php echo $row["id"]?>"  class="btn btn-default btn-sm"><span class="glyphicon glyphicon-remove"></span></a></td>
